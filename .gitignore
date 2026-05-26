@@ -29,6 +29,9 @@ BumblebeeGUI/Resources/bumblebee_x86_64
 # OR uncomment the line below if you prefer to always fetch fresh.
 # BumblebeeGUI/Resources/threat_intel/
 
+# Local release signing config — copy .env.example to .env and fill in your values
+.env
+
 # macOS
 .DS_Store
 *.swp

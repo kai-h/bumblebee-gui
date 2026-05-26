@@ -7,10 +7,14 @@
 #     --apple-id "you@example.com" --team-id "TEAMID" --password "app-specific-password"
 #
 # Usage:
+#   cp .env.example .env   # then fill in your values
 #   ./release.sh
-#   TEAM_ID=XXXXXXXX SIGN_ID="Developer ID Application: Your Name (XXXXXXXX)" ./release.sh
 
 set -euo pipefail
+
+# Load signing config from .env (gitignored — copy .env.example to .env)
+# shellcheck source=.env.example
+source "$(dirname "$0")/.env"
 
 SCHEME="BumblebeeGUI"
 PROJECT="BumblebeeGUI.xcodeproj"
@@ -20,10 +24,10 @@ APP="$EXPORT_DIR/BumblebeeGUI.app"
 VERSION=$(xcodebuild -project "$PROJECT" -scheme "$SCHEME" -showBuildSettings 2>/dev/null | awk '/^\s*MARKETING_VERSION/{print $3; exit}')
 DMG="build/BumblebeeGUI-$VERSION.dmg"
 
-# ── Configuration ────────────────────────────────────────────────────────────
-TEAM_ID="${TEAM_ID:-S5B5YSJ6Q3}"
-SIGN_ID="${SIGN_ID:-Developer ID Application: Kai Howells (S5B5YSJ6Q3)}"
-NOTARY_PROFILE="${NOTARY_PROFILE:-NotaryProfile}"  # keychain profile from notarytool store-credentials
+# ── Configuration (loaded from .env) ─────────────────────────────────────────
+: "${TEAM_ID:?TEAM_ID not set — copy .env.example to .env and fill in your values}"
+: "${SIGN_ID:?SIGN_ID not set — copy .env.example to .env and fill in your values}"
+: "${NOTARY_PROFILE:?NOTARY_PROFILE not set — copy .env.example to .env and fill in your values}"
 
 echo "==> Cleaning build directory"
 rm -rf build
