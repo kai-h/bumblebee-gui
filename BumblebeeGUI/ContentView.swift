@@ -9,7 +9,6 @@ struct ContentView: View {
     @State private var selectedFolder: URL?
     @State private var profile: ScanProfile = .project
     @State private var showPicker = false
-    @State private var expandedEcosystems: Set<String> = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,8 +28,7 @@ struct ContentView: View {
             if runner.isScanning || runner.hasResults {
                 ResultsView(
                     summary: runner.summary,
-                    statusMessage: runner.statusMessage,
-                    expandedEcosystems: $expandedEcosystems
+                    statusMessage: runner.statusMessage
                 )
             } else {
                 EmptyStateView()
@@ -111,7 +109,6 @@ struct ScanControlsView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // Folder target
             HStack(spacing: 6) {
                 Image(systemName: "folder")
                     .foregroundStyle(.secondary)
@@ -136,7 +133,6 @@ struct ScanControlsView: View {
             )
             .frame(maxWidth: .infinity)
 
-            // Profile
             Picker("Profile", selection: $profile) {
                 ForEach(ScanProfile.allCases, id: \.self) {
                     Text($0.displayName).tag($0)
@@ -146,7 +142,6 @@ struct ScanControlsView: View {
             .frame(width: 110)
             .help(profile.description)
 
-            // Action button
             if runner.isScanning {
                 Button(role: .destructive, action: runner.cancel) {
                     Label("Cancel", systemImage: "stop.fill")
@@ -190,7 +185,13 @@ struct EmptyStateView: View {
 struct ResultsView: View {
     let summary: ScanSummary
     let statusMessage: String
-    @Binding var expandedEcosystems: Set<String>
+
+    @State private var expandedEcosystems: Set<String> = []
+    @State private var ecosystemSearch: [String: String] = [:]
+
+    // Render at most this many package rows per ecosystem at once.
+    // Large ecosystems get a filter field instead of a 10,000-row list.
+    private let maxVisible = 100
 
     var body: some View {
         VStack(spacing: 0) {
@@ -201,13 +202,15 @@ struct ResultsView: View {
                     .foregroundStyle(.secondary)
                 Spacer()
                 if !summary.findings.isEmpty {
-                    Label("\(summary.findings.count) finding\(summary.findings.count == 1 ? "" : "s")", systemImage: "exclamationmark.triangle.fill")
-                        .font(.callout.bold())
-                        .foregroundStyle(.orange)
+                    Label(
+                        "\(summary.findings.count) finding\(summary.findings.count == 1 ? "" : "s")",
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                    .font(.callout.bold())
+                    .foregroundStyle(.orange)
                 }
                 if !summary.packages.isEmpty {
-                    Text("·")
-                        .foregroundStyle(.secondary)
+                    Text("·").foregroundStyle(.secondary)
                     Text("\(summary.packages.count) package\(summary.packages.count == 1 ? "" : "s")")
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -219,54 +222,83 @@ struct ResultsView: View {
 
             Divider()
 
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
-                    if !summary.findings.isEmpty {
-                        Section {
-                            ForEach(summary.sortedFindings) { finding in
-                                FindingRowView(finding: finding)
-                                Divider().padding(.leading, 42)
-                            }
-                        } header: {
-                            SectionHeaderView(
-                                icon: "exclamationmark.triangle.fill",
-                                title: "Findings",
-                                count: summary.findings.count,
-                                iconColor: .orange
-                            )
+            // List virtualises rows — only visible rows exist in memory,
+            // so expanding a 9,000-package ecosystem stays responsive.
+            List {
+                if !summary.findings.isEmpty {
+                    Section {
+                        ForEach(summary.sortedFindings) { finding in
+                            FindingRowView(finding: finding)
+                                .listRowInsets(EdgeInsets())
+                                .listRowSeparator(.hidden)
                         }
+                    } header: {
+                        SectionHeaderView(
+                            icon: "exclamationmark.triangle.fill",
+                            title: "Findings",
+                            count: summary.findings.count,
+                            iconColor: .orange
+                        )
                     }
+                }
 
-                    if !summary.packages.isEmpty {
-                        Section {
-                            ForEach(summary.packagesByEcosystem.keys.sorted(), id: \.self) { eco in
-                                EcosystemGroupView(
-                                    ecosystem: eco,
-                                    packages: summary.packagesByEcosystem[eco] ?? [],
-                                    isExpanded: expandedEcosystems.contains(eco),
-                                    onToggle: {
-                                        if expandedEcosystems.contains(eco) {
-                                            expandedEcosystems.remove(eco)
-                                        } else {
-                                            expandedEcosystems.insert(eco)
-                                        }
-                                    }
-                                )
-                                Divider()
-                            }
-                        } header: {
-                            SectionHeaderView(
-                                icon: "shippingbox.fill",
-                                title: "Packages",
-                                count: summary.packages.count,
-                                iconColor: .blue
-                            )
+                if !summary.packages.isEmpty {
+                    Section {
+                        ForEach(summary.packagesByEcosystem.keys.sorted(), id: \.self) { eco in
+                            ecosystemRow(eco)
+                                .listRowInsets(EdgeInsets())
+                                .listRowSeparator(.hidden)
                         }
+                    } header: {
+                        SectionHeaderView(
+                            icon: "shippingbox.fill",
+                            title: "Packages",
+                            count: summary.packages.count,
+                            iconColor: .blue
+                        )
                     }
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .background(Color(NSColor.textBackgroundColor))
         }
+    }
+
+    @ViewBuilder
+    private func ecosystemRow(_ eco: String) -> some View {
+        let packages  = summary.packagesByEcosystem[eco] ?? []
+        let query     = ecosystemSearch[eco, default: ""]
+        let filtered  = query.isEmpty
+            ? packages
+            : packages.filter { $0.packageName.localizedCaseInsensitiveContains(query) }
+        let shown     = Array(filtered.prefix(maxVisible))
+        let isLarge   = packages.count > maxVisible
+
+        EcosystemGroupView(
+            ecosystem: eco,
+            packages: packages,
+            shown: shown,
+            isLarge: isLarge,
+            filteredCount: filtered.count,
+            maxVisible: maxVisible,
+            isExpanded: expandedBinding(eco),
+            searchText: searchBinding(eco)
+        )
+    }
+
+    private func expandedBinding(_ eco: String) -> Binding<Bool> {
+        Binding(
+            get: { expandedEcosystems.contains(eco) },
+            set: { if $0 { expandedEcosystems.insert(eco) } else { expandedEcosystems.remove(eco) } }
+        )
+    }
+
+    private func searchBinding(_ eco: String) -> Binding<String> {
+        Binding(
+            get: { ecosystemSearch[eco, default: ""] },
+            set: { ecosystemSearch[eco] = $0 }
+        )
     }
 }
 
@@ -322,15 +354,11 @@ struct FindingRowView: View {
                             .foregroundStyle(.secondary)
                         if let cat = finding.catalogName {
                             Text("·").foregroundStyle(.tertiary)
-                            Text(cat)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            Text(cat).font(.caption).foregroundStyle(.secondary)
                         }
                         if let type = finding.findingType {
                             Text("·").foregroundStyle(.tertiary)
-                            Text(type)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            Text(type).font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -380,13 +408,18 @@ struct SeverityBadgeView: View {
 
 struct EcosystemGroupView: View {
     let ecosystem: String
-    let packages: [ScanPackage]
-    let isExpanded: Bool
-    let onToggle: () -> Void
+    let packages: [ScanPackage]   // full list (for the header count)
+    let shown: [ScanPackage]      // pre-filtered & capped slice to render
+    let isLarge: Bool
+    let filteredCount: Int
+    let maxVisible: Int
+    @Binding var isExpanded: Bool
+    @Binding var searchText: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button(action: onToggle) {
+            // Header row
+            Button(action: { isExpanded.toggle() }) {
                 HStack(spacing: 6) {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                         .font(.caption.bold())
@@ -406,9 +439,55 @@ struct EcosystemGroupView: View {
             .buttonStyle(.plain)
 
             if isExpanded {
-                ForEach(packages) { pkg in
+                // Filter field — shown for any ecosystem over the cap
+                if isLarge {
+                    HStack(spacing: 6) {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .foregroundStyle(.secondary)
+                        TextField("Filter \(ecosystem) packages…", text: $searchText)
+                            .textFieldStyle(.plain)
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .padding(.horizontal)
+                    .padding(.vertical, 4)
+                }
+
+                // Package rows — capped at maxVisible
+                ForEach(shown) { pkg in
                     PackageRowView(package: pkg)
                     Divider().padding(.leading, 32)
+                }
+
+                // Cap / filter hint
+                if filteredCount > maxVisible {
+                    HStack {
+                        Spacer()
+                        Text(
+                            searchText.isEmpty
+                                ? "Showing \(maxVisible) of \(filteredCount) — filter to narrow results"
+                                : "\(shown.count) of \(filteredCount) matching"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .padding(.vertical, 6)
+                } else if !searchText.isEmpty && shown.isEmpty {
+                    Text("No packages matching \"\(searchText)\"")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 6)
                 }
             }
         }
@@ -420,7 +499,6 @@ struct PackageRowView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            // indent to align with ecosystem label
             Color.clear.frame(width: 22)
 
             VStack(alignment: .leading, spacing: 2) {
