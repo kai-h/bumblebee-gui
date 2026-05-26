@@ -9,11 +9,13 @@ class BumblebeeRunner: ObservableObject {
     @Published var hasResults = false
 
     private var currentProcess: Process?
+    private var cancelled = false
 
     func scan(folder: URL, profile: ScanProfile) {
         guard !isScanning else { return }
         isScanning = true
         hasResults = false
+        cancelled = false
         summary = ScanSummary()
         error = nil
         statusMessage = "Starting scan…"
@@ -32,10 +34,11 @@ class BumblebeeRunner: ObservableObject {
     }
 
     func cancel() {
+        cancelled = true
         currentProcess?.terminate()
         currentProcess = nil
         isScanning = false
-        statusMessage = "Cancelled"
+        // statusMessage is set by the runScan completion block once it notices cancellation
     }
 
     // MARK: - Private
@@ -92,9 +95,15 @@ class BumblebeeRunner: ObservableObject {
 
         await MainActor.run {
             self.isScanning = false
-            self.hasResults = true
+            self.hasResults = pkgCount > 0 || fndCount > 0
             self.currentProcess = nil
-            if fndCount > 0 {
+            if self.cancelled {
+                if fndCount > 0 {
+                    self.statusMessage = "Scan cancelled — \(fndCount) finding\(fndCount == 1 ? "" : "s") in \(pkgCount) package\(pkgCount == 1 ? "" : "s") checked so far (incomplete)"
+                } else {
+                    self.statusMessage = "Scan cancelled — \(pkgCount) package\(pkgCount == 1 ? "" : "s") checked so far, no findings (incomplete)"
+                }
+            } else if fndCount > 0 {
                 self.statusMessage = "\(fndCount) finding\(fndCount == 1 ? "" : "s") · \(pkgCount) package\(pkgCount == 1 ? "" : "s")"
             } else {
                 self.statusMessage = "Clean — \(pkgCount) package\(pkgCount == 1 ? "" : "s") scanned, no findings"

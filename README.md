@@ -10,7 +10,9 @@ Bumblebee scans your project dependencies and system packages against a threat i
 
 - Scan any folder with a single click
 - Three scan profiles: Baseline (system packages), Project (dependencies), Deep (full folder)
+- Cancel a running scan at any time — partial results are preserved and clearly marked incomplete
 - Results displayed with colour-coded severity badges, grouped by ecosystem
+- Per-ecosystem filter field for large package sets (ecosystems over 100 packages show a live search field)
 - Threat intel updates checked against GitHub releases on every launch, applied in-app without a rebuild
 - Universal binary — runs natively on Apple Silicon and Intel
 
