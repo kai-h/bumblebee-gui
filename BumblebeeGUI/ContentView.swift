@@ -75,7 +75,7 @@ struct ContentView: View {
         .onAppear { updater.setupOnLaunch() }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                ProfilePickerView(profile: $profile, isDisabled: runner.isScanning)
+                ProfilePickerView(profile: $profile, isDisabled: runner.isScanning, isScanning: runner.isScanning)
 
                 if runner.isScanning {
                     Button(role: .destructive, action: runner.cancel) {
@@ -118,6 +118,7 @@ struct ContentView: View {
 struct ProfilePickerView: View {
     @Binding var profile: ScanProfile
     let isDisabled: Bool
+    let isScanning: Bool
 
     var body: some View {
         HStack(spacing: 0) {
@@ -126,10 +127,16 @@ struct ProfilePickerView: View {
                     VStack(spacing: 3) {
                         Image(systemName: p.icon)
                             .font(.system(size: 15))
+                            .symbolEffect(
+                                .pulse,
+                                options: .repeating,
+                                isActive: isScanning && profile == p
+                            )
                         Text(p.displayName)
                             .font(.system(size: 10, weight: .medium))
                     }
                     .frame(width: 68, height: 36)
+                    .contentShape(Rectangle())
                     .background(
                         profile == p
                             ? Color.accentColor.opacity(0.15)

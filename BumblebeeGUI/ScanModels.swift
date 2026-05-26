@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 enum ScanProfile: String, CaseIterable {
-    case baseline, project, deep
+    case project, baseline, deep
 
     var displayName: String { rawValue.capitalized }
 
