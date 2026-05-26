@@ -77,20 +77,19 @@ struct ContentView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 ProfilePickerView(profile: $profile, isDisabled: runner.isScanning, isScanning: runner.isScanning)
 
-                if runner.isScanning {
-                    Button(role: .destructive, action: runner.cancel) {
-                        Label("Cancel", systemImage: "stop.fill")
-                    }
-                } else {
-                    Button {
+                Button {
+                    if runner.isScanning {
+                        runner.cancel()
+                    } else {
                         guard let folder = selectedFolder else { return }
                         runner.scan(folder: folder, profile: profile)
-                    } label: {
-                        Label("Scan", systemImage: "magnifyingglass.circle.fill")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(selectedFolder == nil)
+                } label: {
+                    Image(systemName: runner.isScanning ? "stop.fill" : "magnifyingglass")
                 }
+                .buttonStyle(.borderedProminent)
+                .tint(runner.isScanning ? .red : .accentColor)
+                .disabled(!runner.isScanning && selectedFolder == nil)
             }
         }
         .fileImporter(
