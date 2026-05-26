@@ -23,7 +23,7 @@
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>© 2026 Kai Howells</string>
+	<string>© Kai Howells, Automatica</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>
