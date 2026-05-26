@@ -16,10 +16,14 @@ Bumblebee scans your project dependencies and system packages against a threat i
 - Threat intel updates checked against GitHub releases on every launch, applied in-app without a rebuild
 - Universal binary — runs natively on Apple Silicon and Intel
 
+## Download
+
+Pre-built, signed, and notarised: [BumblebeeGUI-2.1.dmg](https://github.com/kai-h/bumblebee-gui/releases/download/v2.1/BumblebeeGUI-2.1.dmg)
+
 ## Requirements
 
 - macOS 14 Sonoma or later
-- Xcode 15 or later
+- Xcode 15 or later (only needed if building from source)
 
 ## Setup
 
