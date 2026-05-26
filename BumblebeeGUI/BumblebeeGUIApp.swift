@@ -7,6 +7,7 @@ struct BumblebeeGUIApp: App {
             ContentView()
         }
         .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified(showsTitle: true))
         .windowResizability(.contentMinSize)
         .defaultSize(width: 920, height: 620)
         .commands {

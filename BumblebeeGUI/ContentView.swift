@@ -16,12 +16,19 @@ struct ContentView: View {
                 UpdateBannerView(updater: updater)
             }
 
-            ScanControlsView(
-                selectedFolder: $selectedFolder,
-                profile: $profile,
-                showPicker: $showPicker,
-                runner: runner
-            )
+            // Profile description — lives just below the toolbar
+            HStack(spacing: 5) {
+                Image(systemName: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                Text(profile.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 5)
+            .background(Color(NSColor.controlBackgroundColor))
 
             Divider()
 
@@ -35,7 +42,48 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 760, minHeight: 520)
+        .navigationTitle("Bumblebee")
         .onAppear { updater.setupOnLaunch() }
+        .toolbar {
+            // Left side — folder selector
+            ToolbarItem(placement: .navigation) {
+                Button { showPicker = true } label: {
+                    if let folder = selectedFolder {
+                        Label(folder.lastPathComponent, systemImage: "folder")
+                    } else {
+                        Label("Open Folder…", systemImage: "folder.badge.plus")
+                    }
+                }
+                .help(selectedFolder?.path ?? "Choose a folder to scan")
+                .disabled(runner.isScanning)
+            }
+
+            // Right side — profile picker + action button
+            ToolbarItemGroup(placement: .primaryAction) {
+                Picker("Profile", selection: $profile) {
+                    ForEach(ScanProfile.allCases, id: \.self) {
+                        Text($0.displayName).tag($0)
+                    }
+                }
+                .frame(width: 110)
+                .disabled(runner.isScanning)
+
+                if runner.isScanning {
+                    Button(role: .destructive, action: runner.cancel) {
+                        Label("Cancel", systemImage: "stop.fill")
+                    }
+                } else {
+                    Button {
+                        guard let folder = selectedFolder else { return }
+                        runner.scan(folder: folder, profile: profile)
+                    } label: {
+                        Label("Scan", systemImage: "magnifyingglass.circle.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(selectedFolder == nil)
+                }
+            }
+        }
         .fileImporter(
             isPresented: $showPicker,
             allowedContentTypes: [.folder],
@@ -96,83 +144,6 @@ struct UpdateBannerView: View {
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(Color.blue.opacity(0.08))
-    }
-}
-
-// MARK: - Scan controls
-
-struct ScanControlsView: View {
-    @Binding var selectedFolder: URL?
-    @Binding var profile: ScanProfile
-    @Binding var showPicker: Bool
-    @ObservedObject var runner: BumblebeeRunner
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
-                // Folder target
-                HStack(spacing: 6) {
-                    Image(systemName: "folder")
-                        .foregroundStyle(.secondary)
-                    if let folder = selectedFolder {
-                        Text(folder.path)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    } else {
-                        Text("Choose a folder to scan…")
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("Browse…") { showPicker = true }
-                        .controlSize(.small)
-                }
-                .padding(7)
-                .background(Color(NSColor.controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(NSColor.separatorColor), lineWidth: 1)
-                )
-                .frame(maxWidth: .infinity)
-                .disabled(runner.isScanning)
-
-                // Profile picker
-                Picker("Profile", selection: $profile) {
-                    ForEach(ScanProfile.allCases, id: \.self) {
-                        Text($0.displayName).tag($0)
-                    }
-                }
-                .labelsHidden()
-                .frame(width: 110)
-                .disabled(runner.isScanning)
-
-                // Action button
-                if runner.isScanning {
-                    Button(role: .destructive, action: runner.cancel) {
-                        Label("Cancel", systemImage: "stop.fill")
-                    }
-                    .controlSize(.large)
-                } else {
-                    Button {
-                        guard let folder = selectedFolder else { return }
-                        runner.scan(folder: folder, profile: profile)
-                    } label: {
-                        Label("Scan", systemImage: "magnifyingglass.circle.fill")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(selectedFolder == nil)
-                }
-            }
-
-            // Profile description — visible beneath the controls row
-            Text(profile.description)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 2)
-                .animation(.none, value: profile)
-        }
-        .padding()
     }
 }
 
