@@ -77,16 +77,25 @@ struct ContentView: View {
         .onAppear { updater.setupOnLaunch() }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                ProfilePickerView(profile: $profile, isDisabled: runner.isScanning, isScanning: runner.isScanning)
-
-                if runner.hasResults {
-                    Button {
-                        exportResults()
-                    } label: {
+                Button {
+                    exportResults()
+                } label: {
+                    VStack(spacing: 3) {
                         Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 15))
+                        Text("Export")
+                            .font(.system(size: 10, weight: .medium))
                     }
-                    .help("Export results as Markdown")
+                    .frame(width: 68, height: 36)
+                    .contentShape(Rectangle())
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
+                .buttonStyle(.plain)
+                .opacity(runner.hasResults ? 1 : 0)
+                .disabled(!runner.hasResults)
+                .help("Export results as Markdown")
+
+                ProfilePickerView(profile: $profile, isDisabled: runner.isScanning, isScanning: runner.isScanning)
 
                 Button {
                     if runner.isScanning {
