@@ -6,6 +6,14 @@ enum ScanProfile: String, CaseIterable {
 
     var displayName: String { rawValue.capitalized }
 
+    var icon: String {
+        switch self {
+        case .project:  return "document.viewfinder.fill"
+        case .baseline: return "square.stack.fill"
+        case .deep:     return "square.3.layers.3d.bottom.filled"
+        }
+    }
+
     var description: String {
         switch self {
         case .baseline: return "Scans system-wide package managers (pip, npm, Homebrew, gem…). Folder selection is optional."

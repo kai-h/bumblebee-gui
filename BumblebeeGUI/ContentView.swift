@@ -74,15 +74,8 @@ struct ContentView: View {
         .navigationTitle("Bumblebee")
         .onAppear { updater.setupOnLaunch() }
         .toolbar {
-            // Profile picker + action button
             ToolbarItemGroup(placement: .primaryAction) {
-                Picker("Profile", selection: $profile) {
-                    ForEach(ScanProfile.allCases, id: \.self) {
-                        Text($0.displayName).tag($0)
-                    }
-                }
-                .frame(width: 110)
-                .disabled(runner.isScanning)
+                ProfilePickerView(profile: $profile, isDisabled: runner.isScanning)
 
                 if runner.isScanning {
                     Button(role: .destructive, action: runner.cancel) {
@@ -117,6 +110,44 @@ struct ContentView: View {
         } message: {
             Text(runner.error ?? "")
         }
+    }
+}
+
+// MARK: - Profile picker
+
+struct ProfilePickerView: View {
+    @Binding var profile: ScanProfile
+    let isDisabled: Bool
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(ScanProfile.allCases, id: \.self) { p in
+                Button(action: { profile = p }) {
+                    VStack(spacing: 3) {
+                        Image(systemName: p.icon)
+                            .font(.system(size: 15))
+                        Text(p.displayName)
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .frame(width: 68, height: 36)
+                    .background(
+                        profile == p
+                            ? Color.accentColor.opacity(0.15)
+                            : Color.clear
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                .disabled(isDisabled)
+            }
+        }
+        .padding(2)
+        .background(Color(NSColor.controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+        )
     }
 }
 
