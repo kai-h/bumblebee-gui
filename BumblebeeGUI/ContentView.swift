@@ -91,7 +91,7 @@ struct ContentView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
-                .opacity(runner.hasResults ? 1 : 0)
+                .opacity(runner.hasResults ? 1 : 0.3)
                 .disabled(!runner.hasResults)
                 .help("Export results as Markdown")
 
