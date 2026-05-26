@@ -21,7 +21,7 @@ PROJECT="BumblebeeGUI.xcodeproj"
 ARCHIVE="build/BumblebeeGUI.xcarchive"
 EXPORT_DIR="build/export"
 APP="$EXPORT_DIR/BumblebeeGUI.app"
-VERSION=$(xcodebuild -project "$PROJECT" -scheme "$SCHEME" -showBuildSettings 2>/dev/null | awk '/^\s*MARKETING_VERSION/{print $3; exit}')
+VERSION=$(grep -m1 'MARKETING_VERSION' "$PROJECT/project.pbxproj" | awk '{print $3}' | tr -d ';')
 DMG="build/BumblebeeGUI-$VERSION.dmg"
 
 # ── Configuration (loaded from .env) ─────────────────────────────────────────
