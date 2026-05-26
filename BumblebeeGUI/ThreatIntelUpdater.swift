@@ -150,7 +150,7 @@ class ThreatIntelUpdater: ObservableObject {
             includingPropertiesForKeys: [.isDirectoryKey],
             options: .skipsHiddenFiles
         ) {
-            for case let url as URL in enumerator {
+            while let url = enumerator.nextObject() as? URL {
                 if url.lastPathComponent == "threat_intel",
                    (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
                     threatIntelSrc = url

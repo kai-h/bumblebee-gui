@@ -20,15 +20,13 @@ class BumblebeeRunner: ObservableObject {
         error = nil
         statusMessage = "Starting scan…"
 
-        Task.detached(priority: .userInitiated) { [weak self] in
+        Task(priority: .userInitiated) {
             do {
-                try await self?.runScan(folder: folder, profile: profile)
+                try await self.runScan(folder: folder, profile: profile)
             } catch {
-                await MainActor.run {
-                    self?.error = error.localizedDescription
-                    self?.isScanning = false
-                    self?.statusMessage = "Scan failed"
-                }
+                self.error = error.localizedDescription
+                self.isScanning = false
+                self.statusMessage = "Scan failed"
             }
         }
     }
