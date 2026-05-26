@@ -94,7 +94,7 @@ struct ContentView: View {
                 .opacity(runner.hasResults ? 1 : 0.3)
                 .disabled(!runner.hasResults)
                 .keyboardShortcut("s", modifiers: .command)
-                .help("Export results as Markdown (⌘S)")
+                .help("Save scan results (⌘S)")
 
                 ProfilePickerView(profile: $profile, isDisabled: runner.isScanning, isScanning: runner.isScanning)
 

@@ -16,6 +16,7 @@
 		BB000062000000000000000A /* bumblebee_arm64 in Resources */ = {isa = PBXBuildFile; fileRef = BB000039000000000000000A /* bumblebee_arm64 */; };
 		BB000063000000000000000A /* bumblebee_x86_64 in Resources */ = {isa = PBXBuildFile; fileRef = BB000040000000000000000A /* bumblebee_x86_64 */; };
 		BB000064000000000000000A /* threat_intel in Resources */ = {isa = PBXBuildFile; fileRef = BB000041000000000000000A /* threat_intel */; };
+		BB000065000000000000000A /* Credits.html in Resources */ = {isa = PBXBuildFile; fileRef = BB000042000000000000000A /* Credits.html */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 		BB000039000000000000000A /* bumblebee_arm64 */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = bumblebee_arm64; sourceTree = "<group>"; };
 		BB000040000000000000000A /* bumblebee_x86_64 */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = bumblebee_x86_64; sourceTree = "<group>"; };
 		BB000041000000000000000A /* threat_intel */ = {isa = PBXFileReference; lastKnownFileType = folder; path = threat_intel; sourceTree = "<group>"; };
+		BB000042000000000000000A /* Credits.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = Credits.html; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +84,7 @@
 				BB000039000000000000000A /* bumblebee_arm64 */,
 				BB000040000000000000000A /* bumblebee_x86_64 */,
 				BB000041000000000000000A /* threat_intel */,
+				BB000042000000000000000A /* Credits.html */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -148,11 +151,11 @@
 				BB000062000000000000000A /* bumblebee_arm64 in Resources */,
 				BB000063000000000000000A /* bumblebee_x86_64 in Resources */,
 				BB000064000000000000000A /* threat_intel in Resources */,
+				BB000065000000000000000A /* Credits.html in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
 
 /* Begin PBXSourcesBuildPhase section */
 		BB000021000000000000000A /* Sources */ = {
@@ -304,7 +307,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 22;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -315,7 +318,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.automatica.bumblebee-gui";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -333,7 +336,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 22;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -344,7 +347,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.automatica.bumblebee-gui";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
