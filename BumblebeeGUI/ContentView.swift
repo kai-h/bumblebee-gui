@@ -83,7 +83,7 @@ struct ContentView: View {
                     VStack(spacing: 3) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 15))
-                        Text("Export")
+                        Text("Save")
                             .font(.system(size: 10, weight: .medium))
                     }
                     .frame(width: 68, height: 36)
