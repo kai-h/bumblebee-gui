@@ -128,7 +128,7 @@ struct ProfilePickerView: View {
                             .font(.system(size: 15))
                             .symbolEffect(
                                 .variableColor.iterative.reversing,
-                                options: .repeating,
+                                options: .repeating.speed(0.5),
                                 isActive: isScanning && profile == p
                             )
                         Text(p.displayName)
