@@ -33,6 +33,27 @@
 		BB000041000000000000000A /* threat_intel */ = {isa = PBXFileReference; lastKnownFileType = folder; path = threat_intel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		BB000024000000000000000A /* Set Build Number from Git */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Set Build Number from Git";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "BUILD=$(git -C \"$SRCROOT\" rev-list --count HEAD)\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUILD\" \"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		BB000023000000000000000A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -93,6 +114,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = BB000016000000000000000A /* Build configuration list for PBXNativeTarget "BumblebeeGUI" */;
 			buildPhases = (
+				BB000024000000000000000A /* Set Build Number from Git */,
 				BB000021000000000000000A /* Sources */,
 				BB000022000000000000000A /* Resources */,
 				BB000023000000000000000A /* Frameworks */,
