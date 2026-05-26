@@ -22,7 +22,7 @@ DMG="build/BumblebeeGUI-$VERSION.dmg"
 
 # ── Configuration ────────────────────────────────────────────────────────────
 TEAM_ID="${TEAM_ID:-S5B5YSJ6Q3}"
-SIGN_ID="${SIGN_ID:-Developer ID Application}"   # set to full identity string
+SIGN_ID="${SIGN_ID:-Developer ID Application: Kai Howells (S5B5YSJ6Q3)}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-NotaryProfile}"  # keychain profile from notarytool store-credentials
 
 echo "==> Cleaning build directory"
