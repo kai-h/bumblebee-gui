@@ -8,9 +8,9 @@ enum ScanProfile: String, CaseIterable {
 
     var description: String {
         switch self {
-        case .baseline: return "System package managers (pip, npm, gem…)"
-        case .project:  return "Project dependencies in the selected folder"
-        case .deep:     return "Deep scan — every file in the selected folder"
+        case .baseline: return "Scans system-wide package managers (pip, npm, Homebrew, gem…). Folder selection is optional."
+        case .project:  return "Scans dependency manifests in the selected folder — package.json, requirements.txt, go.mod, Gemfile, etc."
+        case .deep:     return "Recursively walks every file in the selected folder. Most thorough, but slowest."
         }
     }
 }

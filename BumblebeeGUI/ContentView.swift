@@ -108,56 +108,69 @@ struct ScanControlsView: View {
     @ObservedObject var runner: BumblebeeRunner
 
     var body: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "folder")
-                    .foregroundStyle(.secondary)
-                if let folder = selectedFolder {
-                    Text(folder.path)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                } else {
-                    Text("Choose a folder to scan…")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                // Folder target
+                HStack(spacing: 6) {
+                    Image(systemName: "folder")
                         .foregroundStyle(.secondary)
+                    if let folder = selectedFolder {
+                        Text(folder.path)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    } else {
+                        Text("Choose a folder to scan…")
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Browse…") { showPicker = true }
+                        .controlSize(.small)
                 }
-                Spacer()
-                Button("Browse…") { showPicker = true }
-                    .controlSize(.small)
-            }
-            .padding(7)
-            .background(Color(NSColor.controlBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color(NSColor.separatorColor), lineWidth: 1)
-            )
-            .frame(maxWidth: .infinity)
+                .padding(7)
+                .background(Color(NSColor.controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+                )
+                .frame(maxWidth: .infinity)
+                .disabled(runner.isScanning)
 
-            Picker("Profile", selection: $profile) {
-                ForEach(ScanProfile.allCases, id: \.self) {
-                    Text($0.displayName).tag($0)
+                // Profile picker
+                Picker("Profile", selection: $profile) {
+                    ForEach(ScanProfile.allCases, id: \.self) {
+                        Text($0.displayName).tag($0)
+                    }
                 }
-            }
-            .labelsHidden()
-            .frame(width: 110)
-            .help(profile.description)
+                .labelsHidden()
+                .frame(width: 110)
+                .disabled(runner.isScanning)
 
-            if runner.isScanning {
-                Button(role: .destructive, action: runner.cancel) {
-                    Label("Cancel", systemImage: "stop.fill")
+                // Action button
+                if runner.isScanning {
+                    Button(role: .destructive, action: runner.cancel) {
+                        Label("Cancel", systemImage: "stop.fill")
+                    }
+                    .controlSize(.large)
+                } else {
+                    Button {
+                        guard let folder = selectedFolder else { return }
+                        runner.scan(folder: folder, profile: profile)
+                    } label: {
+                        Label("Scan", systemImage: "magnifyingglass.circle.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(selectedFolder == nil)
                 }
-                .controlSize(.large)
-            } else {
-                Button {
-                    guard let folder = selectedFolder else { return }
-                    runner.scan(folder: folder, profile: profile)
-                } label: {
-                    Label("Scan", systemImage: "magnifyingglass.circle.fill")
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(selectedFolder == nil)
             }
+
+            // Profile description — visible beneath the controls row
+            Text(profile.description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
+                .animation(.none, value: profile)
         }
         .padding()
     }
