@@ -9,7 +9,7 @@ enum ScanProfile: String, CaseIterable {
     var icon: String {
         switch self {
         case .project:  return "document.viewfinder.fill"
-        case .baseline: return "square.stack.fill"
+        case .baseline: return "square.2.layers.3d.bottom.filled"
         case .deep:     return "square.3.layers.3d.bottom.filled"
         }
     }
