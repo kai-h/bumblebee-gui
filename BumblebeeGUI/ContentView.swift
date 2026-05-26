@@ -16,26 +16,32 @@ struct ContentView: View {
                 UpdateBannerView(updater: updater)
             }
 
-            // Folder selector
-            HStack(spacing: 8) {
-                Image(systemName: "folder")
-                    .foregroundStyle(.secondary)
-                if let folder = selectedFolder {
-                    Text(folder.path)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                } else {
-                    Text("Choose a folder to scan…")
+            // Folder selector — entire row is clickable
+            Button(action: { showPicker = true }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "folder")
                         .foregroundStyle(.secondary)
+                    if let folder = selectedFolder {
+                        Text(folder.path)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .foregroundStyle(.primary)
+                    } else {
+                        Text("Choose a folder to scan…")
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text("Browse…")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
                 }
-                Spacer()
-                Button("Browse…") { showPicker = true }
-                    .controlSize(.small)
-                    .disabled(runner.isScanning)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+            .buttonStyle(.plain)
             .background(Color(NSColor.controlBackgroundColor))
+            .disabled(runner.isScanning)
 
             Divider()
 
