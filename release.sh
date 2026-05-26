@@ -17,7 +17,7 @@ PROJECT="BumblebeeGUI.xcodeproj"
 ARCHIVE="build/BumblebeeGUI.xcarchive"
 EXPORT_DIR="build/export"
 APP="$EXPORT_DIR/BumblebeeGUI.app"
-VERSION=$(defaults read "$(pwd)/BumblebeeGUI/Info.plist" CFBundleShortVersionString 2>/dev/null || echo "1.0")
+VERSION=$(xcodebuild -project "$PROJECT" -scheme "$SCHEME" -showBuildSettings 2>/dev/null | awk '/^\s*MARKETING_VERSION/{print $3; exit}')
 DMG="build/BumblebeeGUI-$VERSION.dmg"
 
 # ── Configuration ────────────────────────────────────────────────────────────
