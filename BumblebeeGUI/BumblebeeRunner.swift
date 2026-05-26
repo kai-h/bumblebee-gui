@@ -7,6 +7,8 @@ class BumblebeeRunner: ObservableObject {
     @Published var statusMessage = ""
     @Published var error: String?
     @Published var hasResults = false
+    @Published var scannedFolder: URL?
+    @Published var scannedProfile: ScanProfile?
 
     private var currentProcess: Process?
     private var cancelled = false
@@ -19,6 +21,8 @@ class BumblebeeRunner: ObservableObject {
         summary = ScanSummary()
         error = nil
         statusMessage = "Starting scan…"
+        scannedFolder = folder
+        scannedProfile = profile
 
         Task(priority: .userInitiated) {
             do {

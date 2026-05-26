@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - Root
 
@@ -9,6 +10,7 @@ struct ContentView: View {
     @State private var selectedFolder: URL?
     @State private var profile: ScanProfile = .project
     @State private var showPicker = false
+    @State private var showExportError = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -77,6 +79,15 @@ struct ContentView: View {
             ToolbarItemGroup(placement: .primaryAction) {
                 ProfilePickerView(profile: $profile, isDisabled: runner.isScanning, isScanning: runner.isScanning)
 
+                if runner.hasResults {
+                    Button {
+                        exportResults()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .help("Export results as Markdown")
+                }
+
                 Button {
                     if runner.isScanning {
                         runner.cancel()
@@ -101,6 +112,11 @@ struct ContentView: View {
                 selectedFolder = urls.first
             }
         }
+        .alert("Export Failed", isPresented: $showExportError) {
+            Button("OK") { }
+        } message: {
+            Text("The results could not be saved.")
+        }
         .alert("Scan Error", isPresented: Binding(
             get: { runner.error != nil },
             set: { if !$0 { runner.error = nil } }
@@ -108,6 +124,26 @@ struct ContentView: View {
             Button("OK") { runner.error = nil }
         } message: {
             Text(runner.error ?? "")
+        }
+    }
+
+    // MARK: - Export
+
+    private func exportResults() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        panel.nameFieldStringValue = "bumblebee-scan.md"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            let markdown = runner.summary.markdownReport(
+                folder: runner.scannedFolder,
+                profile: runner.scannedProfile
+            )
+            do {
+                try markdown.write(to: url, atomically: true, encoding: .utf8)
+            } catch {
+                showExportError = true
+            }
         }
     }
 }
@@ -127,8 +163,8 @@ struct ProfilePickerView: View {
                         Image(systemName: p.icon)
                             .font(.system(size: 15))
                             .symbolEffect(
-                                .variableColor.cumulative.hideInactiveLayers.nonReversing,
-                                options: .repeat(.continuous),
+                                .variableColor.cumulative.nonReversing,
+                                options: .repeating,
                                 isActive: isScanning && profile == p
                             )
                         Text(p.displayName)

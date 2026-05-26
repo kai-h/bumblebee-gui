@@ -9,8 +9,8 @@ enum ScanProfile: String, CaseIterable {
     var icon: String {
         switch self {
         case .project:  return "document.viewfinder.fill"
-        case .baseline: return "square.2.layers.3d.bottom.filled"
-        case .deep:     return "square.3.layers.3d.bottom.filled"
+        case .baseline: return "square.2.layers.3d"
+        case .deep:     return "square.3.layers.3d"
         }
     }
 
@@ -74,5 +74,46 @@ struct ScanSummary {
 
     var sortedFindings: [ScanFinding] {
         findings.sorted { $0.severityRank > $1.severityRank }
+    }
+
+    func markdownReport(folder: URL?, profile: ScanProfile?) -> String {
+        var lines: [String] = []
+        let dateStr = DateFormatter.localizedString(from: Date(), dateStyle: .long, timeStyle: .short)
+
+        lines += ["# Bumblebee Scan Report", ""]
+        if let folder { lines.append("**Folder:** \(folder.path)") }
+        if let profile { lines.append("**Profile:** \(profile.displayName)") }
+        lines += ["**Date:** \(dateStr)", "", "---", ""]
+
+        // Findings
+        if findings.isEmpty {
+            lines += ["## Findings", "", "No findings.", ""]
+        } else {
+            lines += ["## Findings (\(findings.count))", ""]
+            for f in sortedFindings {
+                let title = "\(f.packageName)\(f.version.map { " \($0)" } ?? "")"
+                lines += ["### \(f.severity.uppercased()) — \(title)", ""]
+                lines.append("- **Ecosystem:** \(f.ecosystem)")
+                if let t = f.findingType  { lines.append("- **Type:** \(t)") }
+                if let c = f.catalogName  { lines.append("- **Catalog:** \(c)") }
+                if let e = f.evidence     { lines.append("- **Evidence:** \(e)") }
+                lines.append("")
+            }
+        }
+
+        lines += ["---", "", "## Packages (\(packages.count))", ""]
+        for eco in packagesByEcosystem.keys.sorted() {
+            let pkgs = packagesByEcosystem[eco] ?? []
+            lines += ["### \(eco) (\(pkgs.count))", ""]
+            for pkg in pkgs {
+                var entry = "- \(pkg.packageName)"
+                if let v = pkg.version    { entry += " \(v)" }
+                if let f = pkg.sourceFile { entry += " — `\(f)`" }
+                lines.append(entry)
+            }
+            lines.append("")
+        }
+
+        return lines.joined(separator: "\n")
     }
 }
