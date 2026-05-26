@@ -34,7 +34,7 @@ struct ContentView: View {
                     }
                     Spacer()
                     Text("Browse…")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.accentColor)
                         .font(.callout)
                 }
                 .padding(.horizontal)
@@ -69,7 +69,14 @@ struct ContentView: View {
                     statusMessage: runner.statusMessage
                 )
             } else {
-                EmptyStateView()
+                EmptyStateView(
+                    canScan: selectedFolder != nil,
+                    onSelectFolder: { showPicker = true },
+                    onScan: {
+                        guard let folder = selectedFolder else { return }
+                        runner.scan(folder: folder, profile: profile)
+                    }
+                )
             }
         }
         .frame(minWidth: 760, minHeight: 520)
@@ -249,14 +256,25 @@ struct UpdateBannerView: View {
 // MARK: - Empty state
 
 struct EmptyStateView: View {
+    let canScan: Bool
+    let onSelectFolder: () -> Void
+    let onScan: () -> Void
+
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "shield.lefthalf.filled.badge.checkmark")
                 .font(.system(size: 52))
                 .foregroundStyle(.tertiary)
-            Text("Select a folder and click Scan")
-                .foregroundStyle(.secondary)
-                .font(.title3)
+            HStack(spacing: 0) {
+                Button("Select a folder") { onSelectFolder() }
+                    .buttonStyle(.link)
+                Text(" and click ")
+                    .foregroundStyle(.secondary)
+                Button("Scan") { onScan() }
+                    .buttonStyle(.link)
+                    .disabled(!canScan)
+            }
+            .font(.title3)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(NSColor.textBackgroundColor))
