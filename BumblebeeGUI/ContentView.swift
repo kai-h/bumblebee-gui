@@ -127,7 +127,7 @@ struct ProfilePickerView: View {
                         Image(systemName: p.icon)
                             .font(.system(size: 15))
                             .symbolEffect(
-                                .pulse,
+                                .variableColor.iterative.reversing,
                                 options: .repeating,
                                 isActive: isScanning && profile == p
                             )
