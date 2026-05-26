@@ -24,13 +24,36 @@ class BumblebeeRunner: ObservableObject {
         scannedFolder = folder
         scannedProfile = profile
 
-        Task(priority: .userInitiated) {
+        // Resolve paths on the main actor before going off-actor
+        let binaryURL: URL
+        do {
+            binaryURL = try Self.installedBinaryURL()
+        } catch {
+            self.error = error.localizedDescription
+            isScanning = false
+            statusMessage = "Scan failed"
+            return
+        }
+
+        var args = ["scan", "--profile", profile.rawValue, "--root", folder.path]
+        let threatIntelPath = ThreatIntelUpdater.threatIntelDirectory().path
+        if FileManager.default.fileExists(atPath: threatIntelPath) {
+            args += ["--exposure-catalog", threatIntelPath]
+        }
+
+        statusMessage = "Scanning \(folder.lastPathComponent)…"
+
+        // Run parsing off the main actor so it doesn't block the UI
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
             do {
-                try await self.runScan(folder: folder, profile: profile)
+                try await self.runScan(binaryURL: binaryURL, args: args)
             } catch {
-                self.error = error.localizedDescription
-                self.isScanning = false
-                self.statusMessage = "Scan failed"
+                await MainActor.run {
+                    self.error = error.localizedDescription
+                    self.isScanning = false
+                    self.statusMessage = "Scan failed"
+                }
             }
         }
     }
@@ -40,20 +63,12 @@ class BumblebeeRunner: ObservableObject {
         currentProcess?.terminate()
         currentProcess = nil
         isScanning = false
-        // statusMessage is set by the runScan completion block once it notices cancellation
     }
 
     // MARK: - Private
 
-    private func runScan(folder: URL, profile: ScanProfile) async throws {
-        let binaryURL = try Self.installedBinaryURL()
-        let threatIntelPath = ThreatIntelUpdater.threatIntelDirectory().path
-
-        var args = ["scan", "--profile", profile.rawValue, "--root", folder.path]
-        if FileManager.default.fileExists(atPath: threatIntelPath) {
-            args += ["--exposure-catalog", threatIntelPath]
-        }
-
+    // nonisolated: runs on a background thread, explicit MainActor.run for UI updates
+    private nonisolated func runScan(binaryURL: URL, args: [String]) async throws {
         let proc = Process()
         proc.executableURL = binaryURL
         proc.arguments = args
@@ -63,39 +78,60 @@ class BumblebeeRunner: ObservableObject {
         proc.standardOutput = stdoutPipe
         proc.standardError = stderrPipe
 
-        await MainActor.run {
-            self.currentProcess = proc
-            self.statusMessage = "Scanning \(folder.lastPathComponent)…"
-        }
+        await MainActor.run { self.currentProcess = proc }
 
         try proc.run()
 
         let outHandle = stdoutPipe.fileHandleForReading
         var textBuffer = ""
+        var pendingPackages: [ScanPackage] = []
+        var pendingFindings: [ScanFinding] = []
+        var lastFlush = Date()
 
         while proc.isRunning {
             let chunk = outHandle.availableData
             if chunk.isEmpty {
+                // Flush batched results to UI every 250ms while idle
+                if Date().timeIntervalSince(lastFlush) >= 0.25 {
+                    let pkgs = pendingPackages
+                    let fnds = pendingFindings
+                    if !pkgs.isEmpty || !fnds.isEmpty {
+                        pendingPackages = []
+                        pendingFindings = []
+                        lastFlush = Date()
+                        await MainActor.run {
+                            self.summary.packages.append(contentsOf: pkgs)
+                            self.summary.findings.append(contentsOf: fnds)
+                            let total = self.summary.packages.count
+                            self.statusMessage = "Scanning… \(total) package\(total == 1 ? "" : "s") found"
+                        }
+                    }
+                }
                 try await Task.sleep(nanoseconds: 50_000_000)
                 continue
             }
             if let text = String(data: chunk, encoding: .utf8) {
                 textBuffer += text
-                await flushLines(from: &textBuffer)
+                Self.flushLines(from: &textBuffer, packages: &pendingPackages, findings: &pendingFindings)
             }
         }
 
-        // drain remaining output
+        // Drain remaining output
         let tail = outHandle.readDataToEndOfFile()
         if !tail.isEmpty, let text = String(data: tail, encoding: .utf8) {
             textBuffer += text
         }
-        await flushLines(from: &textBuffer, force: true)
+        Self.flushLines(from: &textBuffer, packages: &pendingPackages, findings: &pendingFindings, force: true)
 
-        let pkgCount = await MainActor.run { self.summary.packages.count }
-        let fndCount = await MainActor.run { self.summary.findings.count }
-
+        // Final batch push to main actor
+        let finalPkgs = pendingPackages
+        let finalFnds = pendingFindings
         await MainActor.run {
+            self.summary.packages.append(contentsOf: finalPkgs)
+            self.summary.findings.append(contentsOf: finalFnds)
+
+            let pkgCount = self.summary.packages.count
+            let fndCount = self.summary.findings.count
             self.isScanning = false
             self.hasResults = pkgCount > 0 || fndCount > 0
             self.currentProcess = nil
@@ -113,19 +149,28 @@ class BumblebeeRunner: ObservableObject {
         }
     }
 
-    private func flushLines(from buffer: inout String, force: Bool = false) async {
+    // Synchronous, nonisolated static — no actor interaction, safe to call from background thread
+    private nonisolated static func flushLines(
+        from buffer: inout String,
+        packages: inout [ScanPackage],
+        findings: inout [ScanFinding],
+        force: Bool = false
+    ) {
         var lines = buffer.components(separatedBy: "\n")
-        // Keep the last fragment unless force-flushing
-        let incomplete = force ? "" : (lines.removeLast())
+        let incomplete = force ? "" : lines.removeLast()
         buffer = incomplete
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             guard !trimmed.isEmpty else { continue }
-            await parseRecord(trimmed)
+            parseRecord(trimmed, packages: &packages, findings: &findings)
         }
     }
 
-    private func parseRecord(_ line: String) async {
+    private nonisolated static func parseRecord(
+        _ line: String,
+        packages: inout [ScanPackage],
+        findings: inout [ScanFinding]
+    ) {
         guard
             let data = line.data(using: .utf8),
             let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -140,7 +185,7 @@ class BumblebeeRunner: ObservableObject {
                     .map { "\($0.key): \($0.value)" }
                     .joined(separator: "  ·  ")
             }
-            let finding = ScanFinding(
+            findings.append(ScanFinding(
                 ecosystem:   json["ecosystem"] as? String ?? "unknown",
                 packageName: json["package_name"] as? String ?? "unknown",
                 version:     json["version"] as? String,
@@ -148,22 +193,16 @@ class BumblebeeRunner: ObservableObject {
                 findingType: json["finding_type"] as? String,
                 catalogName: json["catalog_name"] as? String,
                 evidence:    evidenceStr
-            )
-            await MainActor.run { self.summary.findings.append(finding) }
+            ))
         } else if json["package_name"] != nil {
-            let pkg = ScanPackage(
+            packages.append(ScanPackage(
                 ecosystem:   json["ecosystem"] as? String ?? "unknown",
                 packageName: json["package_name"] as? String ?? "unknown",
                 version:     json["version"] as? String,
                 sourceFile:  json["source_file"] as? String,
                 confidence:  json["confidence"] as? String,
                 projectPath: json["project_path"] as? String
-            )
-            await MainActor.run {
-                self.summary.packages.append(pkg)
-                let count = self.summary.packages.count
-                self.statusMessage = "Scanning… \(count) package\(count == 1 ? "" : "s") found"
-            }
+            ))
         }
     }
 
