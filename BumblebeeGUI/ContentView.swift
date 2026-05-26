@@ -16,7 +16,30 @@ struct ContentView: View {
                 UpdateBannerView(updater: updater)
             }
 
-            // Profile description — lives just below the toolbar
+            // Folder selector
+            HStack(spacing: 8) {
+                Image(systemName: "folder")
+                    .foregroundStyle(.secondary)
+                if let folder = selectedFolder {
+                    Text(folder.path)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                } else {
+                    Text("Choose a folder to scan…")
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Browse…") { showPicker = true }
+                    .controlSize(.small)
+                    .disabled(runner.isScanning)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(Color(NSColor.controlBackgroundColor))
+
+            Divider()
+
+            // Profile description
             HStack(spacing: 5) {
                 Image(systemName: "info.circle")
                     .font(.caption)
@@ -45,20 +68,7 @@ struct ContentView: View {
         .navigationTitle("Bumblebee")
         .onAppear { updater.setupOnLaunch() }
         .toolbar {
-            // Left side — folder selector
-            ToolbarItem(placement: .navigation) {
-                Button { showPicker = true } label: {
-                    if let folder = selectedFolder {
-                        Label(folder.lastPathComponent, systemImage: "folder")
-                    } else {
-                        Label("Open Folder…", systemImage: "folder.badge.plus")
-                    }
-                }
-                .help(selectedFolder?.path ?? "Choose a folder to scan")
-                .disabled(runner.isScanning)
-            }
-
-            // Right side — profile picker + action button
+            // Profile picker + action button
             ToolbarItemGroup(placement: .primaryAction) {
                 Picker("Profile", selection: $profile) {
                     ForEach(ScanProfile.allCases, id: \.self) {
