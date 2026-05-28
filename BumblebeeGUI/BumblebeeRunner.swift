@@ -91,28 +91,27 @@ class BumblebeeRunner: ObservableObject {
         while proc.isRunning {
             let chunk = outHandle.availableData
             if chunk.isEmpty {
-                // Flush batched results to UI every 250ms while idle
-                if Date().timeIntervalSince(lastFlush) >= 0.25 {
-                    let pkgs = pendingPackages
-                    let fnds = pendingFindings
-                    if !pkgs.isEmpty || !fnds.isEmpty {
-                        pendingPackages = []
-                        pendingFindings = []
-                        lastFlush = Date()
-                        await MainActor.run {
-                            self.summary.packages.append(contentsOf: pkgs)
-                            self.summary.findings.append(contentsOf: fnds)
-                            let total = self.summary.packages.count
-                            self.statusMessage = "Scanning… \(total) package\(total == 1 ? "" : "s") found"
-                        }
-                    }
-                }
                 try await Task.sleep(nanoseconds: 50_000_000)
-                continue
-            }
-            if let text = String(data: chunk, encoding: .utf8) {
+            } else if let text = String(data: chunk, encoding: .utf8) {
                 textBuffer += text
                 Self.flushLines(from: &textBuffer, packages: &pendingPackages, findings: &pendingFindings)
+            }
+
+            // Flush batched results to UI every 250ms regardless of data flow
+            if Date().timeIntervalSince(lastFlush) >= 0.25 {
+                lastFlush = Date()
+                let pkgs = pendingPackages
+                let fnds = pendingFindings
+                if !pkgs.isEmpty || !fnds.isEmpty {
+                    pendingPackages = []
+                    pendingFindings = []
+                    await MainActor.run {
+                        self.summary.packages.append(contentsOf: pkgs)
+                        self.summary.findings.append(contentsOf: fnds)
+                        let total = self.summary.packages.count
+                        self.statusMessage = "Scanning… \(total) package\(total == 1 ? "" : "s") found"
+                    }
+                }
             }
         }
 
