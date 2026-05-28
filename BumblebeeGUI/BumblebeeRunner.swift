@@ -206,6 +206,29 @@ class BumblebeeRunner: ObservableObject {
         }
     }
 
+    // MARK: - Cloud placeholder detection
+
+    /// Counts files under `root` that exist only as cloud placeholders (SF_DATALESS).
+    /// Uses stat() only — never triggers a download.
+    static func countCloudPlaceholders(in root: URL) -> Int {
+        let SF_DATALESS: UInt32 = 0x40000000
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(
+            at: root,
+            includingPropertiesForKeys: [],
+            options: [.skipsHiddenFiles]
+        ) else { return 0 }
+        var count = 0
+        for case let url as URL in enumerator {
+            var fileInfo = stat()
+            if lstat(url.path, &fileInfo) == 0,
+               (fileInfo.st_flags & SF_DATALESS) != 0 {
+                count += 1
+            }
+        }
+        return count
+    }
+
     // MARK: - Binary management
 
     static func installedBinaryURL() throws -> URL {

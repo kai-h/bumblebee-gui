@@ -11,6 +11,9 @@ struct ContentView: View {
     @State private var profile: ScanProfile = .project
     @State private var showPicker = false
     @State private var showExportError = false
+    @State private var showCloudWarning = false
+    @State private var cloudPlaceholderCount = 0
+    @State private var pendingCloudScan: (folder: URL, profile: ScanProfile)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -74,7 +77,7 @@ struct ContentView: View {
                     onSelectFolder: { showPicker = true },
                     onScan: {
                         guard let folder = selectedFolder else { return }
-                        runner.scan(folder: folder, profile: profile)
+                        startScan(folder: folder, profile: profile)
                     }
                 )
             }
@@ -110,7 +113,7 @@ struct ContentView: View {
                         runner.cancel()
                     } else {
                         guard let folder = selectedFolder else { return }
-                        runner.scan(folder: folder, profile: profile)
+                        startScan(folder: folder, profile: profile)
                     }
                 } label: {
                     Image(systemName: runner.isScanning ? "stop.fill" : "magnifyingglass")
@@ -141,6 +144,37 @@ struct ContentView: View {
             Button("OK") { runner.error = nil }
         } message: {
             Text(runner.error ?? "")
+        }
+        .alert("Files Not Available Locally", isPresented: $showCloudWarning) {
+            Button("Scan Anyway") {
+                if let pending = pendingCloudScan {
+                    runner.scan(folder: pending.folder, profile: pending.profile)
+                }
+                pendingCloudScan = nil
+            }
+            Button("Cancel", role: .cancel) {
+                pendingCloudScan = nil
+            }
+        } message: {
+            let n = cloudPlaceholderCount
+            Text("\(n) file\(n == 1 ? "" : "s") in this folder \(n == 1 ? "is" : "are") stored in the cloud and not available locally. Scanning will trigger downloads, which may be significantly slower than usual.")
+        }
+    }
+
+    // MARK: - Cloud check
+
+    private func startScan(folder: URL, profile: ScanProfile) {
+        Task.detached(priority: .userInitiated) {
+            let count = BumblebeeRunner.countCloudPlaceholders(in: folder)
+            await MainActor.run {
+                if count > 0 {
+                    cloudPlaceholderCount = count
+                    pendingCloudScan = (folder, profile)
+                    showCloudWarning = true
+                } else {
+                    runner.scan(folder: folder, profile: profile)
+                }
+            }
         }
     }
 
