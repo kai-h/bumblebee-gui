@@ -4,7 +4,7 @@
 # Prerequisites:
 #   brew install create-dmg
 #   xcrun notarytool store-credentials "AC_PASSWORD" \
-#     --apple-id "you@example.com" --team-id "TEAMID" --password "app-specific-password"
+#     --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "app-specific-password"
 #
 # Usage:
 #   cp .env.example .env   # then fill in your values
