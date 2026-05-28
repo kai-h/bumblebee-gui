@@ -100,3 +100,19 @@ xcrun stapler staple "$DMG"
 
 echo ""
 echo "Done: $DMG"
+
+# ── Optional GitHub release ───────────────────────────────────────────────────
+read -rp "Push to GitHub as release v$VERSION? [y/N] " PUSH_RELEASE
+if [[ "${PUSH_RELEASE,,}" == "y" ]]; then
+    if ! command -v gh &>/dev/null; then
+        echo "Error: gh CLI not found. Install with: brew install gh" >&2
+        exit 1
+    fi
+    BUILD=$(grep -m1 'CURRENT_PROJECT_VERSION' "$PROJECT/project.pbxproj" | awk '{print $3}' | tr -d ';')
+    echo "==> Creating GitHub release v$VERSION (build $BUILD)"
+    gh release create "v$VERSION" "$DMG" \
+        --title "Bumblebee GUI v$VERSION" \
+        --notes "Build $BUILD" \
+        --latest
+    echo "Released: $(gh release view "v$VERSION" --json url -q .url)"
+fi
