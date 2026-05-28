@@ -1,5 +1,12 @@
 import Foundation
 
+struct PendingCloudScan {
+    let count: Int
+    let folder: URL
+    let binaryURL: URL
+    let args: [String]
+}
+
 @MainActor
 class BumblebeeRunner: ObservableObject {
     @Published var isScanning = false
@@ -9,6 +16,7 @@ class BumblebeeRunner: ObservableObject {
     @Published var hasResults = false
     @Published var scannedFolder: URL?
     @Published var scannedProfile: ScanProfile?
+    @Published var pendingCloudScan: PendingCloudScan?
 
     private var currentProcess: Process?
     private var cancelled = false
@@ -20,11 +28,9 @@ class BumblebeeRunner: ObservableObject {
         cancelled = false
         summary = ScanSummary()
         error = nil
-        statusMessage = "Starting scan…"
         scannedFolder = folder
         scannedProfile = profile
 
-        // Resolve paths on the main actor before going off-actor
         let binaryURL: URL
         do {
             binaryURL = try Self.installedBinaryURL()
@@ -41,9 +47,45 @@ class BumblebeeRunner: ObservableObject {
             args += ["--exposure-catalog", threatIntelPath]
         }
 
-        statusMessage = "Scanning \(folder.lastPathComponent)…"
+        statusMessage = "Checking for cloud-only files…"
 
-        // Run parsing off the main actor so it doesn't block the UI
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
+            let cloudCount = Self.countCloudPlaceholders(in: folder)
+            await MainActor.run {
+                if cloudCount > 0 {
+                    self.isScanning = false
+                    self.statusMessage = ""
+                    self.pendingCloudScan = PendingCloudScan(
+                        count: cloudCount, folder: folder, binaryURL: binaryURL, args: args)
+                } else {
+                    self.statusMessage = "Scanning \(folder.lastPathComponent)…"
+                    self.launchScan(binaryURL: binaryURL, args: args)
+                }
+            }
+        }
+    }
+
+    func proceedAfterCloudWarning() {
+        guard let pending = pendingCloudScan else { return }
+        pendingCloudScan = nil
+        isScanning = true
+        statusMessage = "Scanning \(pending.folder.lastPathComponent)…"
+        launchScan(binaryURL: pending.binaryURL, args: pending.args)
+    }
+
+    func cancelCloudWarning() {
+        pendingCloudScan = nil
+    }
+
+    func cancel() {
+        cancelled = true
+        currentProcess?.terminate()
+        currentProcess = nil
+        isScanning = false
+    }
+
+    private func launchScan(binaryURL: URL, args: [String]) {
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             do {
@@ -56,13 +98,6 @@ class BumblebeeRunner: ObservableObject {
                 }
             }
         }
-    }
-
-    func cancel() {
-        cancelled = true
-        currentProcess?.terminate()
-        currentProcess = nil
-        isScanning = false
     }
 
     // MARK: - Private
@@ -209,7 +244,7 @@ class BumblebeeRunner: ObservableObject {
 
     /// Counts files under `root` that exist only as cloud placeholders (SF_DATALESS).
     /// Uses stat() only — never triggers a download.
-    static func countCloudPlaceholders(in root: URL) -> Int {
+    nonisolated static func countCloudPlaceholders(in root: URL) -> Int {
         let SF_DATALESS: UInt32 = 0x40000000
         let fm = FileManager.default
         guard let enumerator = fm.enumerator(
