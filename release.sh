@@ -103,7 +103,7 @@ echo "Done: $DMG"
 
 # ── Optional GitHub release ───────────────────────────────────────────────────
 read -rp "Push to GitHub as release v$VERSION? [y/N] " PUSH_RELEASE
-if [[ "${PUSH_RELEASE,,}" == "y" ]]; then
+if [[ "$PUSH_RELEASE" == "y" || "$PUSH_RELEASE" == "Y" ]]; then
     if ! command -v gh &>/dev/null; then
         echo "Error: gh CLI not found. Install with: brew install gh" >&2
         exit 1
