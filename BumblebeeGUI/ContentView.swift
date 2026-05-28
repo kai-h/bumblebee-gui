@@ -636,14 +636,19 @@ struct PackageRowView: View {
             Spacer()
 
             if let conf = package.confidence, conf != "high" {
-                let (label, tip): (String, String) = conf == "medium"
-                    ? ("package version inferred",  "Version was inferred from a spec or tag, not confirmed by a lockfile or installed metadata")
-                    : ("package version uncertain", "Detected from a config reference only — not confirmed as actually installed")
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.trailing)
-                    .help(tip)
+                let (heading, label, tip): (String, String, String) = conf == "medium"
+                    ? ("medium confidence", "package version inferred",  "Version was inferred from a spec or tag, not confirmed by a lockfile or installed metadata")
+                    : ("low confidence",    "package version uncertain", "Detected from a config reference only — not confirmed as actually installed")
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(heading)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(label)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.trailing)
+                .help(tip)
             }
         }
         .padding(.horizontal)
