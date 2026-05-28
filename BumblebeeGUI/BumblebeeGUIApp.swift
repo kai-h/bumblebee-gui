@@ -22,5 +22,9 @@ struct BumblebeeGUIApp: App {
             // Remove New Window from File menu — single-window app
             CommandGroup(replacing: .newItem) { }
         }
+
+        Settings {
+            PreferencesView()
+        }
     }
 }

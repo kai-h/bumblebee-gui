@@ -12,6 +12,8 @@
 		BB000053000000000000000A /* ScanModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000033000000000000000A /* ScanModels.swift */; };
 		BB000054000000000000000A /* BumblebeeRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000034000000000000000A /* BumblebeeRunner.swift */; };
 		BB000055000000000000000A /* ThreatIntelUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000035000000000000000A /* ThreatIntelUpdater.swift */; };
+		BB000056000000000000000A /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000043000000000000000A /* AppPreferences.swift */; };
+		BB000057000000000000000A /* PreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000044000000000000000A /* PreferencesView.swift */; };
 		BB000061000000000000000A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB000036000000000000000A /* Assets.xcassets */; };
 		BB000062000000000000000A /* bumblebee_arm64 in Resources */ = {isa = PBXBuildFile; fileRef = BB000039000000000000000A /* bumblebee_arm64 */; };
 		BB000063000000000000000A /* bumblebee_x86_64 in Resources */ = {isa = PBXBuildFile; fileRef = BB000040000000000000000A /* bumblebee_x86_64 */; };
@@ -26,6 +28,8 @@
 		BB000033000000000000000A /* ScanModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanModels.swift; sourceTree = "<group>"; };
 		BB000034000000000000000A /* BumblebeeRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BumblebeeRunner.swift; sourceTree = "<group>"; };
 		BB000035000000000000000A /* ThreatIntelUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThreatIntelUpdater.swift; sourceTree = "<group>"; };
+		BB000043000000000000000A /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
+		BB000044000000000000000A /* PreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesView.swift; sourceTree = "<group>"; };
 		BB000036000000000000000A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BB000037000000000000000A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BB000038000000000000000A /* BumblebeeGUI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BumblebeeGUI.entitlements; sourceTree = "<group>"; };
@@ -70,6 +74,8 @@
 				BB000033000000000000000A /* ScanModels.swift */,
 				BB000034000000000000000A /* BumblebeeRunner.swift */,
 				BB000035000000000000000A /* ThreatIntelUpdater.swift */,
+				BB000043000000000000000A /* AppPreferences.swift */,
+				BB000044000000000000000A /* PreferencesView.swift */,
 				BB000036000000000000000A /* Assets.xcassets */,
 				BB000037000000000000000A /* Info.plist */,
 				BB000038000000000000000A /* BumblebeeGUI.entitlements */,
@@ -167,6 +173,8 @@
 				BB000053000000000000000A /* ScanModels.swift in Sources */,
 				BB000054000000000000000A /* BumblebeeRunner.swift in Sources */,
 				BB000055000000000000000A /* ThreatIntelUpdater.swift in Sources */,
+				BB000056000000000000000A /* AppPreferences.swift in Sources */,
+				BB000057000000000000000A /* PreferencesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -307,7 +315,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -318,7 +326,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.4;
+				MARKETING_VERSION = 2.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.automatica.bumblebee-gui";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -336,7 +344,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -347,7 +355,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.4;
+				MARKETING_VERSION = 2.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.automatica.bumblebee-gui";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

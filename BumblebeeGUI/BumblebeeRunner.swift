@@ -21,7 +21,7 @@ class BumblebeeRunner: ObservableObject {
     private var currentProcess: Process?
     private var cancelled = false
 
-    func scan(folder: URL, profile: ScanProfile) {
+    func scan(folder: URL, profile: ScanProfile, skipCloudCheck: Bool = false) {
         guard !isScanning else { return }
         isScanning = true
         hasResults = false
@@ -45,6 +45,12 @@ class BumblebeeRunner: ObservableObject {
         let threatIntelPath = ThreatIntelUpdater.threatIntelDirectory().path
         if FileManager.default.fileExists(atPath: threatIntelPath) {
             args += ["--exposure-catalog", threatIntelPath]
+        }
+
+        if skipCloudCheck {
+            statusMessage = "Scanning \(folder.lastPathComponent)…"
+            launchScan(binaryURL: binaryURL, args: args)
+            return
         }
 
         statusMessage = "Checking for cloud-only files…"

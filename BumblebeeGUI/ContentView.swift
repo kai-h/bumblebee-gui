@@ -6,9 +6,14 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @StateObject private var runner  = BumblebeeRunner()
     @StateObject private var updater = ThreatIntelUpdater()
+    @ObservedObject private var prefs = AppPreferences.shared
 
-    @State private var selectedFolder: URL?
-    @State private var profile: ScanProfile = .project
+    @State private var selectedFolder: URL? = {
+        guard let url = AppPreferences.shared.defaultScanFolder,
+              FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }()
+    @State private var profile: ScanProfile = AppPreferences.shared.defaultScanProfile
     @State private var showPicker = false
     @State private var showExportError = false
 
@@ -74,7 +79,7 @@ struct ContentView: View {
                     onSelectFolder: { showPicker = true },
                     onScan: {
                         guard let folder = selectedFolder else { return }
-                        runner.scan(folder: folder, profile: profile)
+                        runner.scan(folder: folder, profile: profile, skipCloudCheck: !prefs.checkCloudFilesBeforeScanning)
                     }
                 )
             }
@@ -110,7 +115,7 @@ struct ContentView: View {
                         runner.cancel()
                     } else {
                         guard let folder = selectedFolder else { return }
-                        runner.scan(folder: folder, profile: profile)
+                        runner.scan(folder: folder, profile: profile, skipCloudCheck: !prefs.checkCloudFilesBeforeScanning)
                     }
                 } label: {
                     Image(systemName: runner.isScanning ? "stop.fill" : "magnifyingglass")
