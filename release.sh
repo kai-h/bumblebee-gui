@@ -110,9 +110,11 @@ if [[ "$PUSH_RELEASE" == "y" || "$PUSH_RELEASE" == "Y" ]]; then
     fi
     BUILD=$(grep -m1 'CURRENT_PROJECT_VERSION' "$PROJECT/project.pbxproj" | awk '{print $3}' | tr -d ';')
     echo "==> Creating GitHub release v$VERSION (build $BUILD)"
-    gh release create "v$VERSION" "$DMG" \
+    gh release create "v$VERSION" \
         --title "Bumblebee GUI v$VERSION" \
         --notes "Build $BUILD" \
         --latest
+    echo "==> Uploading $DMG"
+    gh release upload "v$VERSION" "$DMG" --clobber
     echo "Released: $(gh release view "v$VERSION" --json url -q .url)"
 fi
