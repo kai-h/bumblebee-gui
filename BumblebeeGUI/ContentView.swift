@@ -87,6 +87,16 @@ struct ContentView: View {
         .frame(minWidth: 760, minHeight: 520)
         .navigationTitle("Bumblebee")
         .onAppear { updater.setupOnLaunch() }
+        .onChange(of: prefs.defaultScanFolderPath) { _, newPath in
+            if let newPath {
+                let url = URL(fileURLWithPath: newPath)
+                if FileManager.default.fileExists(atPath: url.path) {
+                    selectedFolder = url
+                }
+            } else {
+                selectedFolder = nil
+            }
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {
