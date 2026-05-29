@@ -28,6 +28,6 @@ final class AppPreferences: ObservableObject {
         let ud = UserDefaults.standard
         defaultScanFolderPath = ud.string(forKey: Keys.folderPath)
         defaultScanProfile = ScanProfile(rawValue: ud.string(forKey: Keys.profile) ?? "") ?? .project
-        checkCloudFilesBeforeScanning = ud.object(forKey: Keys.cloudCheck) as? Bool ?? true
+        checkCloudFilesBeforeScanning = ud.object(forKey: Keys.cloudCheck) as? Bool ?? false
     }
 }
