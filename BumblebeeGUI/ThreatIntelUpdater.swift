@@ -11,6 +11,7 @@ class ThreatIntelUpdater: ObservableObject {
     @Published var isChecking = false
     @Published var isUpdating = false
     @Published var updateError: String?
+    @Published var showUpToDate = false
 
     private let versionKey = "installedThreatIntelCommitSHA"
 
@@ -39,14 +40,28 @@ class ThreatIntelUpdater: ObservableObject {
 
     func checkForUpdates() async {
         isChecking = true
+        showUpToDate = false
         updateError = nil
         defer { isChecking = false }
 
+        // Keep spinning for at least one full rotation so the animation is visible
+        async let minimumDelay: () = Task.sleep(nanoseconds: 1_000_000_000)
+
         do {
             let sha = try await fetchLatestThreatIntelCommitSHA()
+            _ = await minimumDelay
             latestVersion = sha
-            updateAvailable = sha != (installedVersion ?? "")
+            if sha != (installedVersion ?? "") {
+                updateAvailable = true
+            } else {
+                showUpToDate = true
+                Task {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    showUpToDate = false
+                }
+            }
         } catch {
+            _ = await minimumDelay
             // Silently ignore update check failures (network may be unavailable)
             print("Threat intel update check failed: \(error)")
         }

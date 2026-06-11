@@ -118,24 +118,7 @@ struct ContentView: View {
                 .keyboardShortcut("s", modifiers: .command)
                 .help("Save scan results (⌘S)")
 
-                Button {
-                    Task { await updater.checkForUpdates() }
-                } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: updater.isChecking ? "arrow.clockwise" : "arrow.clockwise")
-                            .font(.system(size: 15))
-                            .rotationEffect(updater.isChecking ? .degrees(360) : .degrees(0))
-                            .animation(updater.isChecking ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: updater.isChecking)
-                        Text("Check")
-                            .font(.system(size: 10, weight: .medium))
-                    }
-                    .frame(width: 68, height: 36)
-                    .contentShape(Rectangle())
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                }
-                .buttonStyle(.plain)
-                .disabled(updater.isChecking || updater.isUpdating)
-                .help("Check for threat intelligence updates")
+                ThreatIntelCheckButton(updater: updater)
 
                 ProfilePickerView(profile: $profile, isDisabled: runner.isScanning, isScanning: runner.isScanning)
 
@@ -253,6 +236,47 @@ struct ProfilePickerView: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color(NSColor.separatorColor), lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Threat intel check button
+
+struct ThreatIntelCheckButton: View {
+    @ObservedObject var updater: ThreatIntelUpdater
+    @State private var spinDegrees: Double = 0
+
+    var body: some View {
+        Button {
+            Task { await updater.checkForUpdates() }
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: updater.showUpToDate ? "checkmark.circle" : "arrow.clockwise")
+                    .font(.system(size: 15))
+                    .rotationEffect(.degrees(updater.showUpToDate ? 0 : spinDegrees))
+                    .foregroundStyle(updater.showUpToDate ? Color.green : Color.primary)
+                Text(updater.showUpToDate ? "Up to date" : "Check")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(updater.showUpToDate ? Color.green : Color.primary)
+            }
+            .frame(width: 68, height: 36)
+            .contentShape(Rectangle())
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .disabled(updater.isChecking || updater.isUpdating)
+        .help("Check for threat intelligence updates")
+        .onChange(of: updater.isChecking) { _, checking in
+            if checking {
+                spinDegrees = 0
+                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                    spinDegrees = 360
+                }
+            } else {
+                withAnimation(.default) {
+                    spinDegrees = 0
+                }
+            }
+        }
     }
 }
 
