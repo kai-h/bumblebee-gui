@@ -49,7 +49,7 @@ class ThreatIntelUpdater: ObservableObject {
 
         do {
             let sha = try await fetchLatestThreatIntelCommitSHA()
-            _ = await minimumDelay
+            try? await minimumDelay
             latestVersion = sha
             if sha != (installedVersion ?? "") {
                 updateAvailable = true
@@ -61,7 +61,7 @@ class ThreatIntelUpdater: ObservableObject {
                 }
             }
         } catch {
-            _ = await minimumDelay
+            try? await minimumDelay
             // Silently ignore update check failures (network may be unavailable)
             print("Threat intel update check failed: \(error)")
         }
