@@ -118,6 +118,25 @@ struct ContentView: View {
                 .keyboardShortcut("s", modifiers: .command)
                 .help("Save scan results (⌘S)")
 
+                Button {
+                    Task { await updater.checkForUpdates() }
+                } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: updater.isChecking ? "arrow.clockwise" : "arrow.clockwise")
+                            .font(.system(size: 15))
+                            .rotationEffect(updater.isChecking ? .degrees(360) : .degrees(0))
+                            .animation(updater.isChecking ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: updater.isChecking)
+                        Text("Check")
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .frame(width: 68, height: 36)
+                    .contentShape(Rectangle())
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                .disabled(updater.isChecking || updater.isUpdating)
+                .help("Check for threat intelligence updates")
+
                 ProfilePickerView(profile: $profile, isDisabled: runner.isScanning, isScanning: runner.isScanning)
 
                 Button {
