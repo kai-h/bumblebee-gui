@@ -243,17 +243,24 @@ struct ProfilePickerView: View {
 
 struct ThreatIntelCheckButton: View {
     @ObservedObject var updater: ThreatIntelUpdater
-    @State private var spinDegrees: Double = 0
 
     var body: some View {
         Button {
             Task { await updater.checkForUpdates() }
         } label: {
             VStack(spacing: 3) {
-                Image(systemName: updater.showUpToDate ? "checkmark.circle" : "arrow.clockwise")
-                    .font(.system(size: 15))
-                    .rotationEffect(.degrees(updater.showUpToDate ? 0 : spinDegrees))
-                    .foregroundStyle(updater.showUpToDate ? Color.green : Color.primary)
+                if updater.isChecking {
+                    TimelineView(.animation) { context in
+                        let angle = context.date.timeIntervalSinceReferenceDate.remainder(dividingBy: 1) * 360
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 15))
+                            .rotationEffect(.degrees(angle))
+                    }
+                } else {
+                    Image(systemName: updater.showUpToDate ? "checkmark.circle" : "arrow.clockwise")
+                        .font(.system(size: 15))
+                        .foregroundStyle(updater.showUpToDate ? Color.green : Color.primary)
+                }
                 Text(updater.showUpToDate ? "Up to date" : "Check")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(updater.showUpToDate ? Color.green : Color.primary)
@@ -265,18 +272,6 @@ struct ThreatIntelCheckButton: View {
         .buttonStyle(.plain)
         .disabled(updater.isChecking || updater.isUpdating)
         .help("Check for threat intelligence updates")
-        .onChange(of: updater.isChecking) { _, checking in
-            if checking {
-                spinDegrees = 0
-                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                    spinDegrees = 360
-                }
-            } else {
-                withAnimation(.default) {
-                    spinDegrees = 0
-                }
-            }
-        }
     }
 }
 
