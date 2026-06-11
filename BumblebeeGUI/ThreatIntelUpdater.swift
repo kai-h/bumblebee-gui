@@ -1,36 +1,21 @@
 import Foundation
 
-private struct GitHubRelease: Decodable {
-    let tagName: String
-    let publishedAt: String
-    let assets: [GitHubAsset]
-
-    enum CodingKeys: String, CodingKey {
-        case tagName = "tag_name"
-        case publishedAt = "published_at"
-        case assets
-    }
-}
-
-private struct GitHubAsset: Decodable {
-    let name: String
-    let browserDownloadURL: String
-
-    enum CodingKeys: String, CodingKey {
-        case name
-        case browserDownloadURL = "browser_download_url"
-    }
+private struct GitHubCommit: Decodable {
+    let sha: String
 }
 
 @MainActor
 class ThreatIntelUpdater: ObservableObject {
     @Published var updateAvailable = false
-    @Published var latestVersion: String?
+    @Published var latestVersion: String?  // holds the latest commit SHA
     @Published var isChecking = false
     @Published var isUpdating = false
     @Published var updateError: String?
 
-    private let versionKey = "installedThreatIntelVersion"
+    private let versionKey = "installedThreatIntelCommitSHA"
+
+    // The repo tarball URL for the main branch
+    private let repoTarballURL = URL(string: "https://api.github.com/repos/perplexityai/bumblebee/tarball/main")!
 
     var installedVersion: String? {
         UserDefaults.standard.string(forKey: versionKey)
@@ -44,8 +29,11 @@ class ThreatIntelUpdater: ObservableObject {
 
     func setupOnLaunch() {
         Task {
-            installBundledIfNeeded()
-            await checkForUpdates()
+            if FileManager.default.fileExists(atPath: Self.threatIntelDirectory().path) {
+                await checkForUpdates()
+            } else {
+                await firstInstall()
+            }
         }
     }
 
@@ -55,9 +43,9 @@ class ThreatIntelUpdater: ObservableObject {
         defer { isChecking = false }
 
         do {
-            let release = try await fetchLatestRelease()
-            latestVersion = release.tagName
-            updateAvailable = release.tagName != (installedVersion ?? "")
+            let sha = try await fetchLatestThreatIntelCommitSHA()
+            latestVersion = sha
+            updateAvailable = sha != (installedVersion ?? "")
         } catch {
             // Silently ignore update check failures (network may be unavailable)
             print("Threat intel update check failed: \(error)")
@@ -65,14 +53,13 @@ class ThreatIntelUpdater: ObservableObject {
     }
 
     func applyUpdate() async {
-        guard let version = latestVersion else { return }
+        guard let sha = latestVersion else { return }
         isUpdating = true
         updateError = nil
 
         do {
-            let release = try await fetchLatestRelease()
-            try await downloadAndInstall(release: release)
-            UserDefaults.standard.set(version, forKey: versionKey)
+            try await downloadAndInstall()
+            UserDefaults.standard.set(sha, forKey: versionKey)
             updateAvailable = false
         } catch {
             updateError = error.localizedDescription
@@ -83,14 +70,24 @@ class ThreatIntelUpdater: ObservableObject {
 
     // MARK: - Private
 
-    private func installBundledIfNeeded() {
-        let dest = Self.threatIntelDirectory()
-        guard !FileManager.default.fileExists(atPath: dest.path) else { return }
+    // On first launch: try to fetch the latest from GitHub; fall back to the bundled copy if offline.
+    private func firstInstall() async {
+        isUpdating = true
+        defer { isUpdating = false }
 
-        guard let src = Bundle.main.url(forResource: "threat_intel", withExtension: nil) else {
-            return
+        do {
+            let sha = try await fetchLatestThreatIntelCommitSHA()
+            try await downloadAndInstall()
+            UserDefaults.standard.set(sha, forKey: versionKey)
+        } catch {
+            print("First-launch GitHub fetch failed, falling back to bundled copy: \(error)")
+            installBundledCopy()
         }
+    }
 
+    private func installBundledCopy() {
+        guard let src = Bundle.main.url(forResource: "threat_intel", withExtension: nil) else { return }
+        let dest = Self.threatIntelDirectory()
         do {
             let parent = dest.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
@@ -100,28 +97,25 @@ class ThreatIntelUpdater: ObservableObject {
         }
     }
 
-    private func fetchLatestRelease() async throws -> GitHubRelease {
-        let url = URL(string: "https://api.github.com/repos/perplexityai/bumblebee/releases/latest")!
+    // Returns the SHA of the latest commit that touched the threat_intel/ path.
+    private func fetchLatestThreatIntelCommitSHA() async throws -> String {
+        let url = URL(string: "https://api.github.com/repos/perplexityai/bumblebee/commits?path=threat_intel&per_page=1")!
         var req = URLRequest(url: url)
         req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         req.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
         req.timeoutInterval = 10
         let (data, _) = try await URLSession.shared.data(for: req)
-        return try JSONDecoder().decode(GitHubRelease.self, from: data)
+        let commits = try JSONDecoder().decode([GitHubCommit].self, from: data)
+        guard let first = commits.first else { throw UpdateError.noCommitsFound }
+        return first.sha
     }
 
-    private func downloadAndInstall(release: GitHubRelease) async throws {
-        // Pick a darwin tarball — arm64 preferred, any darwin as fallback
-        let preferredArch = BumblebeeRunner.currentArch() == "arm64" ? "arm64" : "amd64"
-        guard let asset = release.assets.first(where: {
-            $0.name.contains("darwin") && $0.name.contains(preferredArch) && $0.name.hasSuffix(".tar.gz")
-        }) ?? release.assets.first(where: {
-            $0.name.contains("darwin") && $0.name.hasSuffix(".tar.gz")
-        }) else {
-            throw UpdateError.noSuitableAsset
-        }
-
-        let (tmpURL, _) = try await URLSession.shared.download(from: URL(string: asset.browserDownloadURL)!)
+    // Downloads the main branch tarball and extracts threat_intel/ from it.
+    private func downloadAndInstall() async throws {
+        var req = URLRequest(url: repoTarballURL)
+        req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        req.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+        let (tmpURL, _) = try await URLSession.shared.download(for: req)
         defer { try? FileManager.default.removeItem(at: tmpURL) }
 
         try await extractThreatIntel(from: tmpURL)
@@ -171,13 +165,13 @@ class ThreatIntelUpdater: ObservableObject {
     }
 
     enum UpdateError: LocalizedError {
-        case noSuitableAsset, extractionFailed, threatIntelNotFound
+        case noCommitsFound, extractionFailed, threatIntelNotFound
 
         var errorDescription: String? {
             switch self {
-            case .noSuitableAsset:    return "No darwin release asset found on GitHub"
-            case .extractionFailed:   return "Failed to extract the release archive"
-            case .threatIntelNotFound: return "threat_intel directory not found in release archive"
+            case .noCommitsFound:      return "No commits found for threat_intel on GitHub"
+            case .extractionFailed:    return "Failed to extract the repository archive"
+            case .threatIntelNotFound: return "threat_intel directory not found in repository archive"
             }
         }
     }
